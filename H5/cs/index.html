@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>客服工作台</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            background: #f5f5f5;
+            height: 100vh;
+            overflow: hidden;
+        }
+        .container-fluid {
+            height: 100vh;
+            display: flex;
+        }
+        /* 左侧用户列表 */
+        .sidebar {
+            width: 300px;
+            background: white;
+            border-right: 1px solid #ddd;
+            display: flex;
+            flex-direction: column;
+        }
+        .sidebar-header {
+            padding: 15px;
+            border-bottom: 1px solid #ddd;
+            background: #f8f9fa;
+        }
+        .sidebar-header h5 {
+            margin: 0;
+            font-size: 16px;
+        }
+        .mini-app-info {
+            padding: 10px 15px;
+            background: #fff3cd;
+            border-bottom: 1px solid #ddd;
+            font-size: 13px;
+        }
+        .user-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+        }
+        .user-item {
+            padding: 12px;
+            margin-bottom: 8px;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .user-item:hover {
+            background: #f0f0f0;
+        }
+        .user-item.active {
+            background: #e3f2fd;
+            border-color: #2196f3;
+        }
+        .user-name {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .user-meta {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 3px;
+        }
+        .user-last-msg {
+            font-size: 12px;
+            color: #999;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .badge {
+            background: red;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 11px;
+            margin-left: 5px;
+        }
+        /* 右侧聊天区域 */
+        .chat-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: white;
+        }
+        .chat-header {
+            padding: 15px;
+            border-bottom: 1px solid #ddd;
+            background: #f8f9fa;
+        }
+        .chat-header h5 {
+            margin: 0;
+            font-size: 16px;
+        }
+        .messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+            background: #f5f5f5;
+        }
+        .message {
+            margin-bottom: 15px;
+            display: flex;
+        }
+        .message.user {
+            justify-content: flex-start;
+        }
+        .message.cs {
+            justify-content: flex-end;
+        }
+        .message-content {
+            max-width: 70%;
+            padding: 10px 15px;
+            border-radius: 5px;
+            word-wrap: break-word;
+        }
+        .message.user .message-content {
+            background: white;
+            color: #333;
+            border: 1px solid #ddd;
+        }
+        .message.cs .message-content {
+            background: #007bff;
+            color: white;
+        }
+        .message-time {
+            font-size: 11px;
+            color: #999;
+            margin-top: 5px;
+        }
+        .message-image {
+            max-width: 200px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .chat-input {
+            padding: 15px;
+            border-top: 1px solid #ddd;
+            background: white;
+        }
+        .input-group {
+            display: flex;
+            gap: 10px;
+            align-items: flex-end;
+        }
+        .input-group textarea {
+            flex: 1;
+            min-height: 80px;
+            max-height: 200px;
+            resize: vertical;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            font-family: inherit;
+            line-height: 1.5;
+        }
+        .input-group textarea:focus {
+            outline: none;
+            border-color: #007bff;
+        }
+        .file-input-wrapper {
+            position: relative;
+            display: inline-block;
+        }
+        .file-input-wrapper input[type="file"] {
+            position: absolute;
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .file-input-btn {
+            width: 40px;
+            height: 40px;
+            padding: 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: #f8f9fa;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            color: #666;
+        }
+        .file-input-btn:hover {
+            background: #e9ecef;
+            border-color: #adb5bd;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 50px;
+            color: #999;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <!-- 登录页面 -->
+        <div v-if="!loggedIn" style="display: flex; align-items: center; justify-content: center; height: 100vh; background: #f5f5f5;">
+            <div style="width: 400px; background: white; padding: 30px; border: 1px solid #ddd; border-radius: 4px;">
+                <h3 style="text-align: center; margin-bottom: 20px;">客服登录</h3>
+                <div v-if="error" class="alert alert-danger">{{ error }}</div>
+                <div class="mb-3">
+                    <label class="form-label">用户名</label>
+                    <input v-model="csName" class="form-control" @keyup.enter="login">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">密码</label>
+                    <input type="password" v-model="csPass" class="form-control" @keyup.enter="login">
+                </div>
+                <button @click="login" class="btn btn-primary w-100" :disabled="loading">
+                    {{ loading ? '登录中...' : '登录' }}
+                </button>
+            </div>
+        </div>
+
+        <!-- 主界面 -->
+        <div v-else class="container-fluid">
+            <!-- 左侧用户列表 -->
+            <div class="sidebar">
+                <div class="sidebar-header">
+                    <h5>用户列表</h5>
+                    <div style="float: right; margin-top: -25px; display: flex; gap: 5px;">
+                        <button @click="showWelcomeModal = true" class="btn btn-sm btn-success" title="设置欢迎语">欢迎语</button>
+                        <button @click="showQRCode = !showQRCode" class="btn btn-sm btn-info" title="显示二维码">二维码</button>
+                        <button @click="logout" class="btn btn-sm btn-secondary">退出</button>
+                    </div>
+                </div>
+                <div class="mini-app-info">
+                    <strong>分配的小程序：</strong>
+                    <span v-if="miniApps && miniApps.length > 0">
+                        <span v-for="(app, index) in miniApps" :key="app.ID">
+                            {{ app.Name || app.AppID }}<span v-if="index < miniApps.length - 1">, </span>
+                        </span>
+                    </span>
+                    <span v-else style="color: red;">未分配</span>
+                </div>
+                <div class="user-list">
+                    <div v-if="!users || users.length === 0" class="empty-state">
+                        暂无用户
+                    </div>
+                    <div v-for="user in (users || [])" :key="user.ID" 
+                         :class="['user-item', { active: selectedUserId === user.ID }]"
+                         @click="selectUser(user)"
+                         @contextmenu.prevent="showDeleteUserOption(user, $event)">
+                        <div class="user-name" style="display: flex; justify-content: space-between; align-items: center;">
+                            <span>用户 #{{ user.ID }}
+                                <span v-if="user.IsOnline" style="margin-left: 8px; font-size: 12px; color: #28a745; font-weight: normal;">在线</span>
+                                <span v-else style="margin-left: 8px; font-size: 12px; color: #6c757d; font-weight: normal;">离线</span></span>
+                            <div style="display: flex; gap: 5px; align-items: center;">
+                                <span v-if="user.Subscribed" style="font-size: 11px; color: #28a745; background: #d4edda; padding: 2px 6px; border-radius: 3px;">已授权</span>
+                                <span v-if="user.UnreadCount > 0" class="badge">{{ user.UnreadCount }}</span>
+                            </div>
+                        </div>
+                        <div class="user-meta">小程序: {{ user.MiniAppName }}</div>
+                        <div v-if="user.LastMessage" class="user-last-msg">{{ user.LastMessage }}</div>
+                        <div v-if="user.LastMessageTime" class="user-meta" style="font-size: 11px;">{{ user.LastMessageTime }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右侧聊天区域 -->
+            <div class="chat-area">
+                <div class="chat-header">
+                    <h5 v-if="selectedUser">与用户 #{{ selectedUser.ID }} 对话 ({{ selectedUser.MiniAppName }})</h5>
+                    <h5 v-else style="color: #999;">请选择用户</h5>
+                </div>
+                <div class="messages" ref="messagesContainer">
+                    <div v-if="!selectedUser" class="empty-state">
+                        请从左侧选择用户开始对话
+                    </div>
+                    <div v-else>
+                        <div v-for="msg in (messages || [])" :key="msg.ID" 
+                             :class="['message', msg.FromUser ? 'user' : 'cs']">
+                            <div class="message-content">
+                                <span v-if="!msg.IsImage">{{ msg.Content }}</span>
+                                <img v-else :src="msg.ImageURL" alt="图片" class="message-image" @click="viewImage(msg.ImageURL)">
+                                <div class="message-time">{{ formatTime(msg.CreatedAt) }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div v-if="selectedUser" class="chat-input">
+                    <div style="margin-bottom: 8px; display: flex; gap: 8px; justify-content: flex-end;">
+                        <button @click="requestPushAuth" class="btn btn-sm btn-info" style="font-size: 12px; padding: 4px 12px;" title="直接推送订阅消息给用户，让用户在微信收到通知">
+                            📢 推送提醒
+                        </button>
+                    </div>
+                    <div class="input-group">
+                        <textarea 
+                            v-model="message" 
+                            placeholder="输入消息...（支持粘贴和拖拽图片）" 
+                            @keydown.enter.exact.prevent="sendMessage"
+                            @paste="handlePaste"
+                            @drop="handleDrop"
+                            @dragover.prevent
+                            @dragenter.prevent
+                            ref="messageInput"></textarea>
+                        <div class="file-input-wrapper">
+                            <input type="file" @change="sendImage" accept="image/*" ref="fileInput" id="fileInput">
+                            <button type="button" class="file-input-btn" @click="$refs.fileInput.click()" title="选择图片">
+                                📎
+                            </button>
+                        </div>
+                        <button @click="sendMessage" class="btn btn-primary" :disabled="!message.trim()" style="height: 40px;">发送</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 图片查看 -->
+        <div v-if="viewingImage" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 9999; display: flex; align-items: center; justify-content: center;" @click="viewingImage = null">
+            <div style="background: white; padding: 20px; border-radius: 4px; max-width: 90%; max-height: 90%;">
+                <button @click="viewingImage = null" style="float: right; margin-bottom: 10px;">关闭</button>
+                <img :src="viewingImage" alt="图片" style="max-width: 100%; max-height: 80vh;">
+            </div>
+        </div>
+
+        <!-- 二维码弹窗 -->
+        <div v-if="showQRCode" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); z-index: 9999; display: flex; align-items: center; justify-content: center;" @click="showQRCode = false">
+            <div style="background: white; padding: 30px; border-radius: 8px; max-width: 400px; text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,0.3);" @click.stop>
+                <h5 style="margin: 0 0 20px 0; color: #333;">小程序二维码</h5>
+                <div v-if="qrCodeLoading" style="padding: 40px; color: #666;">加载中...</div>
+                <div v-else-if="qrCodeError" style="padding: 40px; color: #dc3545;">{{ qrCodeError }}</div>
+                <img v-else-if="qrCodeUrl" :src="qrCodeUrl" alt="小程序二维码" style="max-width: 300px; border: 1px solid #ddd; padding: 10px; background: white; border-radius: 4px;">
+                <div v-else style="padding: 40px; color: #999;">未设置二维码路径，请联系管理员设置</div>
+                <button @click="showQRCode = false" style="margin-top: 20px; padding: 8px 20px; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;">关闭</button>
+            </div>
+        </div>
+
+        <!-- 欢迎语设置弹窗 -->
+        <div v-if="showWelcomeModal" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); z-index: 9999; display: flex; align-items: center; justify-content: center;" @click="showWelcomeModal = false">
+            <div style="background: white; padding: 30px; border-radius: 8px; max-width: 500px; width: 90%; box-shadow: 0 4px 20px rgba(0,0,0,0.3);" @click.stop>
+                <h5 style="margin: 0 0 20px 0; color: #333;">设置欢迎语</h5>
+                <p style="font-size: 12px; color: #666; margin-bottom: 15px;">用户首次发送消息时，将自动发送此欢迎语</p>
+                <textarea 
+                    v-model="welcomeMessage" 
+                    placeholder="请输入欢迎语..." 
+                    style="width: 100%; min-height: 120px; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; resize: vertical;"
+                    rows="5"></textarea>
+                <div style="margin-top: 20px; display: flex; gap: 10px; justify-content: flex-end;">
+                    <button @click="showWelcomeModal = false" style="padding: 8px 20px; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;">取消</button>
+                    <button @click="saveWelcomeMessage" style="padding: 8px 20px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer;">保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const { createApp } = Vue;
+        createApp({
+            data() {
+                return {
+                    loggedIn: false,
+                    csName: '',
+                    csPass: '',
+                    csId: null,
+                    loading: false,
+                    error: '',
+                    miniApps: [],
+                    users: [],
+                    selectedUser: null,
+                    selectedUserId: null,
+                    messages: [],
+                    message: '',
+                    ws: null,
+                    viewingImage: null,
+                    showQRCode: false,
+                    qrCodeUrl: '',
+                    qrCodeLoading: false,
+                    qrCodeError: '',
+                    showWelcomeModal: false,
+                    welcomeMessage: '',
+                    userListRefreshTimer: null,
+                    miniApps: []
+                };
+            },
+            watch: {
+                showQRCode(newVal) {
+                    if (newVal) {
+                        this.loadQRCode();
+                    } else {
+                        this.qrCodeUrl = '';
+                        this.qrCodeError = '';
+                    }
+                }
+            },
+            mounted() {
+                // 从 localStorage 恢复登录状态
+                const savedCsId = localStorage.getItem('csId');
+                const savedCsName = localStorage.getItem('csName');
+                if (savedCsId && savedCsName) {
+                    this.loggedIn = true;
+                    this.csId = parseInt(savedCsId);
+                    this.csName = savedCsName;
+                    this.loadData();
+                    this.connectWebSocket();
+                }
+            },
+            methods: {
+                async login() {
+                    if (!this.csName || !this.csPass) {
+                        this.error = '请输入用户名和密码';
+                        return;
+                    }
+                    this.loading = true;
+                    this.error = '';
+                    try {
+                        const response = await fetch('https://kefu.chacaitx.cn/api/admin/login', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ Name: this.csName, Password: this.csPass })
+                        });
+                        const data = await response.json();
+                        if (data.csId) {
+                            this.loggedIn = true;
+                            this.csId = data.csId;
+                            // 保存登录状态到 localStorage
+                            localStorage.setItem('csId', this.csId.toString());
+                            localStorage.setItem('csName', this.csName);
+                            this.loadData();
+                            this.connectWebSocket();
+                            this.loadWelcomeMessage();
+                        } else {
+                            this.error = data.error || '登录失败';
+                        }
+                    } catch (err) {
+                        this.error = '网络错误: ' + err.message;
+                    } finally {
+                        this.loading = false;
+                    }
+                },
+                async loadData() {
+                    await Promise.all([
+                        this.loadMiniApps(),
+                        this.loadUsers()
+                    ]);
+                },
+                async loadMiniApps() {
+                    try {
+                        const response = await fetch(`https://kefu.chacaitx.cn/api/admin/cs/${this.csId}/miniapps`);
+                        if (response.ok) {
+                            const data = await response.json();
+                            this.miniApps = Array.isArray(data) ? data : [];
+                        } else {
+                            this.miniApps = [];
+                        }
+                    } catch (err) {
+                        console.error('加载小程序列表失败:', err);
+                        this.miniApps = [];
+                    }
+                },
+                async loadUsers() {
+                    try {
+                        const response = await fetch(`https://kefu.chacaitx.cn/api/admin/cs/${this.csId}/users`);
+                        if (response.ok) {
+                            const data = await response.json();
+                            const users = Array.isArray(data) ? data : [];
+                            // 按最后消息时间排序，最新的在最上面
+                            users.sort((a, b) => {
+                                const timeA = a.LastMessageTime ? new Date(a.LastMessageTime).getTime() : 0;
+                                const timeB = b.LastMessageTime ? new Date(b.LastMessageTime).getTime() : 0;
+                                return timeB - timeA; // 降序，最新的在前
+                            });
+                            this.users = users;
+                        } else {
+                            this.users = [];
+                        }
+                    } catch (err) {
+                        console.error('加载用户列表失败:', err);
+                        this.users = [];
+                    }
+                },
+                async selectUser(user) {
+                    this.selectedUser = user;
+                    this.selectedUserId = user.ID;
+                    await this.loadMessages(user.ID);
+                    // 加载消息后刷新用户列表，更新未读消息数
+                    await this.loadUsers();
+                },
+                async loadMessages(userId) {
+                    try {
+                        const response = await fetch(`https://kefu.chacaitx.cn/api/chat/cs/${this.csId}/user/${userId}/messages`);
+                        if (response.ok) {
+                            const data = await response.json();
+                            this.messages = Array.isArray(data) ? data : [];
+                            this.$nextTick(() => {
+                                this.scrollToBottom();
+                            });
+                        } else {
+                            this.messages = [];
+                        }
+                    } catch (err) {
+                        console.error('加载消息失败:', err);
+                        this.messages = [];
+                    }
+                },
+                connectWebSocket() {
+                    if (!this.csId) return;
+                    
+                    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                    const wsUrl = `${protocol}//kefu.chacaitx.cn/api/chat/ws/${this.csId}`;
+                    
+                    try {
+                        this.ws = new WebSocket(wsUrl);
+                        
+                        this.ws.onopen = () => {
+                            console.log('WebSocket 连接成功');
+                            this.error = '';
+                            // 定期刷新用户列表以更新在线状态
+                            if (this.userListRefreshTimer) {
+                                clearInterval(this.userListRefreshTimer);
+                            }
+                            this.userListRefreshTimer = setInterval(() => {
+                                this.loadUsers();
+                                // 如果当前有选中的用户，也刷新消息列表
+                                if (this.selectedUserId) {
+                                    this.loadMessages(this.selectedUserId);
+                                }
+                            }, 5000); // 每5秒刷新一次，更及时
+
+                            // 连接成功后刷新用户列表
+                            this.loadUsers();
+                        };
+                        
+                        this.ws.onmessage = (event) => {
+                            try {
+                                const msg = JSON.parse(event.data);
+                                // 如果消息来自当前选中的用户，立即更新对话框
+                                if (this.selectedUserId && msg.UserID === this.selectedUserId) {
+                                    // 检查消息是否已存在（避免重复）
+                                    const exists = this.messages.some(m => m.ID === msg.ID);
+                                    if (!exists) {
+                                        this.messages.push(msg);
+                                        this.$nextTick(() => {
+                                            this.scrollToBottom();
+                                        });
+                                    } else {
+                                        // 如果已存在，重新加载消息列表以确保同步
+                                        this.loadMessages(this.selectedUserId);
+                                    }
+                                } else {
+                                    // 如果消息来自其他用户，也需要重新加载当前对话框（可能用户切换了）
+                                    if (this.selectedUserId) {
+                                        this.loadMessages(this.selectedUserId);
+                                    }
+                                }
+                                // 立即刷新用户列表，新消息的用户会排到最上面
+                                this.loadUsers();
+                            } catch (err) {
+                                console.error('解析消息失败:', err);
+                            }
+                        };
+                        
+                        this.ws.onerror = (error) => {
+                            console.error('WebSocket 错误:', error);
+                            this.error = 'WebSocket 连接错误，正在重连...';
+                        };
+                        
+                        this.ws.onclose = (event) => {
+                            console.log('WebSocket 连接关闭', event.code, event.reason);
+                            // 清除定时器
+                            if (this.userListRefreshTimer) {
+                                clearInterval(this.userListRefreshTimer);
+                                this.userListRefreshTimer = null;
+                            }
+                            // 如果不是主动关闭，则立即尝试重连
+                            if (this.loggedIn && this.csId) {
+                                console.log('立即尝试重连...');
+                                // 使用很小的延迟避免过于频繁的重连
+                                setTimeout(() => {
+                                    if (this.loggedIn && this.csId) {
+                                        this.connectWebSocket();
+                                    }
+                                }, 100);
+                            }
+                        };
+                    } catch (err) {
+                        console.error('创建WebSocket失败:', err);
+                        this.error = 'WebSocket 连接失败，请刷新页面';
+                    }
+                },
+                async sendMessage() {
+                    if (!this.message.trim() || !this.selectedUser) return;
+                    
+                    const content = this.message.trim();
+                    this.message = ''; // 先清空输入框
+                    
+                    try {
+                        const response = await fetch('https://kefu.chacaitx.cn/api/chat/cs/send', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                UserID: this.selectedUser.ID,
+                                CustomerServiceID: this.csId,
+                                Content: content
+                            })
+                        });
+                        
+                        if (response.ok) {
+                            await this.loadMessages(this.selectedUser.ID);
+                            this.loadUsers();
+                        } else {
+                            this.error = '发送失败';
+                            this.message = content; // 失败时恢复内容
+                        }
+                    } catch (err) {
+                        this.error = '发送错误: ' + err.message;
+                        this.message = content; // 失败时恢复内容
+                    }
+                },
+                async sendImage(event) {
+                    if (!this.selectedUser) return;
+                    const file = event.target.files[0];
+                    if (!file) return;
+                    
+                    const formData = new FormData();
+                    formData.append('image', file);
+                    
+                    try {
+                        const response = await fetch('https://kefu.chacaitx.cn/api/chat/upload', {
+                            method: 'POST',
+                            body: formData
+                        });
+                        const data = await response.json();
+                        if (response.ok && data.url) {
+                            const saveResponse = await fetch('https://kefu.chacaitx.cn/api/chat/cs/send', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    UserID: this.selectedUser.ID,
+                                    CustomerServiceID: this.csId,
+                                    ImageURL: data.url
+                                })
+                            });
+                            
+                            if (saveResponse.ok) {
+                                await this.loadMessages(this.selectedUser.ID);
+                                this.loadUsers();
+                            }
+                        }
+                    } catch (err) {
+                        this.error = '上传失败: ' + err.message;
+                    }
+                    event.target.value = '';
+                },
+                handlePaste(event) {
+                    const items = event.clipboardData.items;
+                    for (let i = 0; i < items.length; i++) {
+                        if (items[i].type.indexOf('image') !== -1) {
+                            event.preventDefault();
+                            const file = items[i].getAsFile();
+                            this.uploadAndSendImage(file);
+                            return;
+                        }
+                    }
+                },
+                handleDrop(event) {
+                    event.preventDefault();
+                    const files = event.dataTransfer.files;
+                    if (files.length > 0) {
+                        for (let i = 0; i < files.length; i++) {
+                            if (files[i].type.startsWith('image/')) {
+                                this.uploadAndSendImage(files[i]);
+                                break; // 只处理第一个图片
+                            }
+                        }
+                    }
+                },
+                async uploadAndSendImage(file) {
+                    if (!this.selectedUser) return;
+                    
+                    const formData = new FormData();
+                    formData.append('image', file);
+                    
+                    try {
+                        const response = await fetch('https://kefu.chacaitx.cn/api/chat/upload', {
+                            method: 'POST',
+                            body: formData
+                        });
+                        const data = await response.json();
+                        if (response.ok && data.url) {
+                            // 通过API保存到数据库
+                            const saveResponse = await fetch('https://kefu.chacaitx.cn/api/chat/cs/send', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    UserID: this.selectedUser.ID,
+                                    CustomerServiceID: this.csId,
+                                    ImageURL: data.url
+                                })
+                            });
+                            
+                            if (saveResponse.ok) {
+                                await this.loadMessages(this.selectedUser.ID);
+                                this.loadUsers();
+                            }
+                        } else {
+                            this.error = data.error || '上传失败';
+                        }
+                    } catch (err) {
+                        this.error = '上传失败: ' + err.message;
+                    }
+                },
+                viewImage(url) {
+                    this.viewingImage = url;
+                },
+                formatTime(dateStr) {
+                    if (!dateStr) return '';
+                    const date = new Date(dateStr);
+                    return date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+                },
+                scrollToBottom() {
+                    const container = this.$refs.messagesContainer;
+                    if (container) {
+                        container.scrollTop = container.scrollHeight;
+                    }
+                },
+                async loadQRCode() {
+                    if (!this.csId) return;
+                    
+                    this.qrCodeLoading = true;
+                    this.qrCodeError = '';
+                    this.qrCodeUrl = '';
+                    
+                    try {
+                        const response = await fetch(`https://kefu.chacaitx.cn/api/chat/cs/${this.csId}/qrcode`);
+                        if (response.ok) {
+                            const blob = await response.blob();
+                            this.qrCodeUrl = URL.createObjectURL(blob);
+                        } else {
+                            const data = await response.json();
+                            this.qrCodeError = data.error || '获取二维码失败';
+                        }
+                    } catch (err) {
+                        this.qrCodeError = '网络错误: ' + err.message;
+                    } finally {
+                        this.qrCodeLoading = false;
+                    }
+                },
+                async loadWelcomeMessage() {
+                    if (!this.csId) return;
+                    
+                    try {
+                        const response = await fetch(`https://kefu.chacaitx.cn/api/admin/cs/${this.csId}/welcome`);
+                        if (response.ok) {
+                            const data = await response.json();
+                            this.welcomeMessage = data.WelcomeMessage || '';
+                        }
+                    } catch (err) {
+                        console.error('加载欢迎语失败:', err);
+                    }
+                },
+                async saveWelcomeMessage() {
+                    if (!this.csId) return;
+                    
+                    try {
+                        const response = await fetch(`https://kefu.chacaitx.cn/api/admin/cs/${this.csId}/welcome`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ WelcomeMessage: this.welcomeMessage })
+                        });
+                        
+                        if (response.ok) {
+                            this.showWelcomeModal = false;
+                            alert('欢迎语设置成功！');
+                        } else {
+                            const data = await response.json();
+                            alert('设置失败: ' + (data.error || '未知错误'));
+                        }
+                    } catch (err) {
+                        alert('网络错误: ' + err.message);
+                    }
+                },
+                async requestPushAuth() {
+                    if (!this.selectedUser) {
+                        alert('请先选择用户');
+                        return;
+                    }
+                    
+                    // 检查用户是否已授权订阅
+                    if (!this.selectedUser.Subscribed) {
+                        alert('该用户未授权订阅消息，无法推送');
+                        return;
+                    }
+                    
+                    try {
+                        const response = await fetch(`https://kefu.chacaitx.cn/api/chat/cs/${this.csId}/user/${this.selectedUser.ID}/push`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' }
+                        });
+                        
+                        if (response.ok) {
+                            const data = await response.json();
+                            alert('推送提醒已发送');
+                        } else {
+                            const data = await response.json();
+                            alert('推送失败: ' + (data.error || '未知错误'));
+                        }
+                    } catch (err) {
+                        alert('网络错误: ' + err.message);
+                    }
+                },
+                showDeleteUserOption(user, event) {
+                    event.stopPropagation();
+                    if (confirm(`确定要删除用户 #${user.ID} 吗？\n\n删除后将同时删除该用户的所有聊天记录。`)) {
+                        this.deleteUser(user.ID);
+                    }
+                },
+                async deleteUser(userId) {
+                    try {
+                        const response = await fetch(`https://kefu.chacaitx.cn/api/admin/cs/${this.csId}/user/${userId}`, {
+                            method: 'DELETE'
+                        });
+                        
+                        if (response.ok) {
+                            alert('用户已删除');
+                            // 如果删除的是当前选中的用户，清除选中状态
+                            if (this.selectedUser && this.selectedUser.ID === userId) {
+                                this.selectedUser = null;
+                                this.selectedUserId = null;
+                                this.messages = [];
+                            }
+                            // 刷新用户列表
+                            this.loadUsers();
+                        } else {
+                            const data = await response.json();
+                            alert('删除失败: ' + (data.error || '未知错误'));
+                        }
+                    } catch (err) {
+                        alert('网络错误: ' + err.message);
+                    }
+                },
+                logout() {
+                    if (confirm('确定要退出登录吗？')) {
+                        if (this.ws) {
+                            this.ws.close();
+                        }
+                        // 清除定时器
+                        if (this.userListRefreshTimer) {
+                            clearInterval(this.userListRefreshTimer);
+                            this.userListRefreshTimer = null;
+                        }
+                        // 清除登录状态
+                        localStorage.removeItem('csId');
+                        localStorage.removeItem('csName');
+                        this.loggedIn = false;
+                        this.csId = null;
+                        this.csName = '';
+                        this.csPass = '';
+                        this.users = [];
+                        this.selectedUser = null;
+                        this.messages = [];
+                        this.showQRCode = false;
+                        this.qrCodeUrl = '';
+                    }
+                }
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>

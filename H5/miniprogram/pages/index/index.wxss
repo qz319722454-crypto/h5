@@ -1,0 +1,7 @@
+scroll-view {
+  border: 1px solid #ccc;
+  margin-bottom: 10px;
+}
+view {
+  padding: 10px;
+}

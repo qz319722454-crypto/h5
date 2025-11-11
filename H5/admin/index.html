@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理员面板 - 在线客服系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #f5f5f5;
+            min-height: 100vh;
+        }
+        .container-fluid {
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+        /* 左侧边栏 - 添加功能 */
+        .sidebar {
+            width: 350px;
+            background: white;
+            border-right: 1px solid #ddd;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+        .sidebar-header {
+            padding: 20px;
+            border-bottom: 1px solid #ddd;
+            background: #f8f9fa;
+        }
+        .sidebar-header h5 {
+            margin: 0;
+            font-size: 18px;
+            color: #333;
+            font-weight: 600;
+        }
+        .sidebar-header p {
+            margin: 5px 0 0 0;
+            font-size: 13px;
+            color: #666;
+        }
+        .logout-btn {
+            margin-top: 10px;
+            padding: 6px 12px;
+            font-size: 13px;
+        }
+        .form-section {
+            padding: 20px;
+            border-bottom: 1px solid #e9ecef;
+        }
+        .form-section:last-child {
+            border-bottom: none;
+        }
+        .form-section h6 {
+            margin: 0 0 15px 0;
+            font-size: 15px;
+            color: #333;
+            font-weight: 600;
+        }
+        .form-label {
+            font-size: 13px;
+            color: #333;
+            margin-bottom: 6px;
+            font-weight: 500;
+        }
+        .form-control {
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 8px 12px;
+            font-size: 14px;
+            margin-bottom: 12px;
+        }
+        .form-control:focus {
+            border-color: #007bff;
+            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+            outline: none;
+        }
+        .btn-primary {
+            background-color: #007bff;
+            border-color: #007bff;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-size: 14px;
+            width: 100%;
+            border: none;
+            cursor: pointer;
+        }
+        .btn-primary:hover {
+            background-color: #0056b3;
+        }
+        .btn-primary:disabled {
+            background-color: #6c757d;
+            opacity: 0.65;
+            cursor: not-allowed;
+        }
+        /* 右侧主内容区 */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: white;
+            overflow: hidden;
+        }
+        .content-header {
+            padding: 20px;
+            border-bottom: 1px solid #ddd;
+            background: #f8f9fa;
+        }
+        .content-header h5 {
+            margin: 0;
+            font-size: 16px;
+            color: #333;
+            font-weight: 600;
+        }
+        .content-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+        .data-section {
+            margin-bottom: 30px;
+        }
+        .data-section:last-child {
+            margin-bottom: 0;
+        }
+        .data-section h6 {
+            margin: 0 0 15px 0;
+            font-size: 15px;
+            color: #333;
+            font-weight: 600;
+        }
+        .table {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .table thead th {
+            background-color: #f8f9fa;
+            border-bottom: 2px solid #dee2e6;
+            color: #333;
+            font-weight: 600;
+            font-size: 13px;
+            padding: 12px;
+            text-align: left;
+        }
+        .table tbody td {
+            padding: 12px;
+            font-size: 13px;
+            color: #333;
+            border-bottom: 1px solid #e9ecef;
+        }
+        .table tbody tr:last-child td {
+            border-bottom: none;
+        }
+        .table tbody tr:hover {
+            background-color: #f8f9fa;
+        }
+        .btn-sm {
+            padding: 4px 10px;
+            font-size: 12px;
+            border-radius: 3px;
+        }
+        .btn-danger {
+            background-color: #dc3545;
+            border-color: #dc3545;
+            color: white;
+            border: none;
+        }
+        .btn-danger:hover {
+            background-color: #c82333;
+        }
+        .btn-danger:disabled {
+            background-color: #6c757d;
+            opacity: 0.65;
+        }
+        .btn-outline-primary {
+            border: 1px solid #007bff;
+            color: #007bff;
+            background: white;
+            padding: 4px 10px;
+            font-size: 12px;
+        }
+        .btn-outline-primary:hover {
+            background-color: #007bff;
+            color: white;
+        }
+        .badge {
+            padding: 4px 8px;
+            font-size: 11px;
+            font-weight: 500;
+            border-radius: 3px;
+        }
+        .badge.bg-danger {
+            background-color: #dc3545 !important;
+        }
+        .badge.bg-primary {
+            background-color: #007bff !important;
+        }
+        .alert {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1050;
+            min-width: 300px;
+            border-radius: 4px;
+            padding: 12px 20px;
+            border: 1px solid;
+        }
+        .text-muted {
+            color: #6c757d !important;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div class="container-fluid">
+            <!-- 左侧边栏：添加功能 -->
+            <div class="sidebar">
+                <div class="sidebar-header">
+                    <h5>管理员面板</h5>
+                    <p>在线客服系统管理</p>
+                    <button @click="logout" class="btn btn-sm btn-secondary logout-btn">退出登录</button>
+                </div>
+
+                <!-- 添加小程序 -->
+                <div class="form-section">
+                    <h6>添加小程序</h6>
+                    <label class="form-label">小程序名称</label>
+                    <input v-model="appName" placeholder="小程序名称" class="form-control" autocomplete="off">
+                    <label class="form-label">App ID</label>
+                    <input v-model="appId" placeholder="小程序 App ID" class="form-control" autocomplete="off">
+                    <label class="form-label">Secret</label>
+                    <input v-model="secret" placeholder="小程序 Secret" class="form-control" autocomplete="off">
+                    <label class="form-label">模板 ID</label>
+                    <input v-model="templateId" placeholder="订阅消息模板 ID" class="form-control" autocomplete="off">
+                    <button @click="addMiniApp" class="btn btn-primary" :disabled="loading">
+                        {{ loading ? '添加中...' : '添加小程序' }}
+                    </button>
+                </div>
+
+                <!-- 添加客服 -->
+                <div class="form-section">
+                    <h6>添加客服</h6>
+                    <label class="form-label">用户名</label>
+                    <input v-model="csName" class="form-control" autocomplete="off">
+                    <label class="form-label">密码</label>
+                    <input type="password" v-model="csPass" class="form-control" autocomplete="new-password">
+                    <button @click="addCS" class="btn btn-primary" :disabled="loading">
+                        {{ loading ? '添加中...' : '添加客服' }}
+                    </button>
+                </div>
+
+                <!-- 分配小程序 -->
+                <div class="form-section">
+                    <h6>分配小程序</h6>
+                    <label class="form-label">小程序</label>
+                    <select v-model="miniAppId" class="form-control" :disabled="loading || availableMiniApps.length === 0">
+                        <option value="">请选择小程序</option>
+                        <option v-for="app in availableMiniApps" :key="app.ID" :value="app.ID">
+                            {{ app.Name || app.AppID }} (ID: {{ app.ID }})
+                        </option>
+                    </select>
+                    <label class="form-label">客服</label>
+                    <select v-model="csId" class="form-control" :disabled="loading || availableCustomerServices.length === 0">
+                        <option value="">请选择客服</option>
+                        <option v-for="cs in availableCustomerServices" :key="cs.ID" :value="cs.ID">
+                            {{ cs.Name }} (ID: {{ cs.ID }})
+                        </option>
+                    </select>
+                    <button @click="assign" class="btn btn-primary" :disabled="loading || !miniAppId || !csId">
+                        {{ loading ? '分配中...' : '分配' }}
+                    </button>
+                </div>
+
+                <!-- 全局设置 -->
+                <div class="form-section">
+                    <h6>全局设置</h6>
+                    <label class="form-label">全局二维码路径</label>
+                    <div class="input-group" style="display: flex; gap: 8px;">
+                        <input v-model="globalQRCodePath" placeholder="例如：pages/index/index" class="form-control" autocomplete="off" style="flex: 1;">
+                        <button @click="setGlobalQRCodePath" class="btn btn-primary" :disabled="loading" style="white-space: nowrap;">
+                            {{ loading ? '设置中...' : '设置' }}
+                        </button>
+                    </div>
+                    <small class="text-muted" style="display: block; margin-top: 4px; font-size: 12px; color: #666;">为所有客服设置默认二维码路径，可在客服列表中单独设置覆盖</small>
+                </div>
+            </div>
+
+            <!-- 右侧主内容区：数据列表 -->
+            <div class="main-content">
+                <div class="content-header">
+                    <h5>数据管理</h5>
+                </div>
+                <div class="content-body">
+                    <!-- 小程序列表 -->
+                    <div class="data-section">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                            <h6>小程序列表</h6>
+                            <button @click="loadMiniApps" class="btn btn-sm btn-outline-primary">刷新</button>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>App ID</th>
+                                        <th>Secret</th>
+                                        <th>模板 ID</th>
+                                        <th>创建时间</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="app in miniApps" :key="app.ID">
+                                        <td>{{ app.ID }}</td>
+                                        <td>{{ app.Name || app.AppID }}</td>
+                                        <td>{{ app.AppID }}</td>
+                                        <td>{{ app.Secret ? app.Secret.substring(0, 10) + '...' : '-' }}</td>
+                                        <td>{{ app.TemplateID || '-' }}</td>
+                                        <td>{{ formatDate(app.CreatedAt) }}</td>
+                                        <td>
+                                            <button @click="deleteMiniApp(app.ID)" class="btn btn-sm btn-danger">删除</button>
+                                        </td>
+                                    </tr>
+                                    <tr v-if="miniApps.length === 0">
+                                        <td colspan="6" class="empty-state">暂无小程序</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- 客服列表 -->
+                    <div class="data-section">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                            <h6>客服列表</h6>
+                            <button @click="loadCustomerServices" class="btn btn-sm btn-outline-primary">刷新</button>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>用户名</th>
+                                        <th>角色</th>
+                                        <th>创建时间</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="cs in customerServices" :key="cs.ID">
+                                        <td>{{ cs.ID }}</td>
+                                        <td>{{ cs.Name }}</td>
+                                        <td>
+                                            <span class="badge" :class="cs.IsAdmin ? 'bg-danger' : 'bg-primary'">
+                                                {{ cs.IsAdmin ? '管理员' : '客服' }}
+                                            </span>
+                                        </td>
+                                        <td>{{ formatDate(cs.CreatedAt) }}</td>
+                                        <td>
+                                            <button @click="setQRCodePath(cs)" class="btn btn-sm btn-info" style="margin-right: 5px;">设置二维码</button>
+                                            <button @click="deleteCS(cs.ID)" class="btn btn-sm btn-danger" 
+                                                    :disabled="cs.IsAdmin && cs.Name === 'admin'">删除</button>
+                                        </td>
+                                    </tr>
+                                    <tr v-if="customerServices.length === 0">
+                                        <td colspan="5" class="empty-state">暂无客服</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- 分配列表 -->
+                    <div class="data-section">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                            <h6>分配列表</h6>
+                            <button @click="loadAssignments" class="btn btn-sm btn-outline-primary">刷新</button>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>小程序 ID</th>
+                                        <th>客服 ID</th>
+                                        <th>创建时间</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="assign in assignments" :key="assign.ID">
+                                        <td>{{ assign.ID }}</td>
+                                        <td>{{ assign.MiniAppID }}</td>
+                                        <td>{{ assign.CustomerServiceID }}</td>
+                                        <td>{{ formatDate(assign.CreatedAt) }}</td>
+                                        <td>
+                                            <button @click="deleteAssignment(assign.ID)" class="btn btn-sm btn-danger">删除</button>
+                                        </td>
+                                    </tr>
+                                    <tr v-if="assignments.length === 0">
+                                        <td colspan="5" class="empty-state">暂无分配记录</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 提示消息 -->
+        <div v-if="message" :class="'alert alert-' + messageType + ' alert-dismissible fade show'" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" @click="message = ''"></button>
+        </div>
+
+        <!-- 登录信息弹窗 -->
+        <div v-if="showLoginInfo" class="modal" style="display: block; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; background: rgba(0,0,0,0.5);" @click.self="showLoginInfo = false">
+            <div class="modal-dialog modal-dialog-centered" style="z-index: 10000;">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">客服登录信息</h5>
+                        <button type="button" class="btn-close" @click="showLoginInfo = false"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label"><strong>登录地址：</strong></label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" :value="newCSInfo.loginUrl" readonly id="loginUrl">
+                                <button class="btn btn-outline-secondary" type="button" @click="copyToClipboard('loginUrl')">复制</button>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label"><strong>用户名：</strong></label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" :value="newCSInfo.name" readonly id="modalCsName">
+                                <button class="btn btn-outline-secondary" type="button" @click="copyToClipboard('modalCsName')">复制</button>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label"><strong>密码：</strong></label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" :value="newCSInfo.password" readonly id="modalCsPassword">
+                                <button class="btn btn-outline-secondary" type="button" @click="copyToClipboard('modalCsPassword')">复制</button>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <button class="btn btn-primary w-100" @click="copyAllInfo">一键复制全部信息</button>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" @click="showLoginInfo = false">关闭</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const { createApp } = Vue;
+        createApp({
+            data() {
+                return {
+                    appName: '',
+                    appId: '',
+                    secret: '',
+                    templateId: '',
+                    csName: '',
+                    csPass: '',
+                    miniAppId: '',
+                    csId: '',
+                    loading: false,
+                    message: '',
+                    messageType: 'success',
+                    miniApps: [],
+                    customerServices: [],
+                    assignments: [],
+                    showLoginInfo: false,
+                    newCSInfo: {
+                        name: '',
+                        password: '',
+                        loginUrl: 'https://kefu.chacaitx.cn/cs/'
+                    },
+                    globalQRCodePath: ''
+                };
+            },
+            computed: {
+                // 获取已分配的小程序ID集合
+                assignedMiniAppIds() {
+                    return new Set(this.assignments.map(a => a.MiniAppID));
+                },
+                // 获取已分配的客服ID集合
+                assignedCSIds() {
+                    return new Set(this.assignments.map(a => a.CustomerServiceID));
+                },
+                // 过滤出未分配的小程序
+                availableMiniApps() {
+                    return this.miniApps.filter(app => !this.assignedMiniAppIds.has(app.ID));
+                },
+                // 过滤出未分配的客服
+                availableCustomerServices() {
+                    return this.customerServices.filter(cs => !this.assignedCSIds.has(cs.ID));
+                }
+            },
+            mounted() {
+                // 检查登录状态
+                const savedIsAdmin = localStorage.getItem('isAdmin');
+                const savedCsId = localStorage.getItem('adminCsId');
+                if (savedIsAdmin === 'true' && savedCsId) {
+                    // 已登录，加载数据
+                    this.loadMiniApps();
+                    this.loadCustomerServices();
+                    this.loadAssignments();
+                    this.loadGlobalQRCodePath();
+                } else {
+                    // 未登录，跳转到登录页
+                    window.location.href = '/';
+                }
+            },
+            methods: {
+                showMessage(msg, type = 'success') {
+                    this.message = msg;
+                    this.messageType = type;
+                    setTimeout(() => {
+                        this.message = '';
+                    }, 3000);
+                },
+                formatDate(dateStr) {
+                    if (!dateStr) return '-';
+                    const date = new Date(dateStr);
+                    return date.toLocaleString('zh-CN');
+                },
+                async addMiniApp() {
+                    if (!this.appName) {
+                        this.showMessage('请输入小程序名称', 'danger');
+                        return;
+                    }
+                    if (!this.appId) {
+                        this.showMessage('请输入 App ID', 'danger');
+                        return;
+                    }
+                    this.loading = true;
+                    try {
+                        const response = await fetch('https://kefu.chacaitx.cn/api/admin/miniapp', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ 
+                                Name: this.appName.trim(),
+                                AppID: this.appId.trim(), 
+                                Secret: this.secret.trim(), 
+                                TemplateID: this.templateId.trim()
+                            })
+                        });
+                        const data = await response.json();
+                        if (response.ok) {
+                            this.showMessage('小程序添加成功！', 'success');
+                            this.appName = '';
+                            this.appId = '';
+                            this.secret = '';
+                            this.templateId = '';
+                            this.loadMiniApps();
+                        } else {
+                            this.showMessage('添加失败: ' + (data.error || '未知错误'), 'danger');
+                        }
+                    } catch (err) {
+                        this.showMessage('网络错误: ' + err.message, 'danger');
+                    } finally {
+                        this.loading = false;
+                    }
+                },
+                async addCS() {
+                    if (!this.csName || !this.csPass) {
+                        this.showMessage('请输入用户名和密码', 'danger');
+                        return;
+                    }
+                    this.loading = true;
+                    try {
+                        const response = await fetch('https://kefu.chacaitx.cn/api/admin/cs', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ 
+                                Name: this.csName.trim(), 
+                                Password: this.csPass.trim() 
+                            })
+                        });
+                        const data = await response.json();
+                        if (response.ok) {
+                            // 先保存登录信息（在清空表单之前）
+                            const savedName = this.csName.trim();
+                            const savedPass = this.csPass.trim();
+                            
+                            // 保存到 newCSInfo 并显示弹窗
+                            this.newCSInfo.name = savedName;
+                            this.newCSInfo.password = savedPass;
+                            this.showLoginInfo = true;
+                            
+                            // 清空表单
+                            this.csName = '';
+                            this.csPass = '';
+                            
+                            this.loadCustomerServices();
+                            this.showMessage('客服添加成功！', 'success');
+                        } else {
+                            this.showMessage('添加失败: ' + (data.error || '未知错误'), 'danger');
+                        }
+                    } catch (err) {
+                        this.showMessage('网络错误: ' + err.message, 'danger');
+                    } finally {
+                        this.loading = false;
+                    }
+                },
+                copyToClipboard(elementId) {
+                    const element = document.getElementById(elementId);
+                    element.select();
+                    element.setSelectionRange(0, 99999); // 移动端支持
+                    try {
+                        document.execCommand('copy');
+                        this.showMessage('已复制到剪贴板', 'success');
+                    } catch (err) {
+                        // 使用现代API
+                        navigator.clipboard.writeText(element.value).then(() => {
+                            this.showMessage('已复制到剪贴板', 'success');
+                        }).catch(() => {
+                            this.showMessage('复制失败，请手动复制', 'danger');
+                        });
+                    }
+                },
+                copyAllInfo() {
+                    const allInfo = `登录地址：${this.newCSInfo.loginUrl}\n用户名：${this.newCSInfo.name}\n密码：${this.newCSInfo.password}`;
+                    try {
+                        navigator.clipboard.writeText(allInfo).then(() => {
+                            this.showMessage('已复制全部信息到剪贴板', 'success');
+                        }).catch(() => {
+                            // 降级方案
+                            const textarea = document.createElement('textarea');
+                            textarea.value = allInfo;
+                            textarea.style.position = 'fixed';
+                            textarea.style.opacity = '0';
+                            document.body.appendChild(textarea);
+                            textarea.select();
+                            try {
+                                document.execCommand('copy');
+                                this.showMessage('已复制全部信息到剪贴板', 'success');
+                            } catch (err) {
+                                this.showMessage('复制失败，请手动复制', 'danger');
+                            }
+                            document.body.removeChild(textarea);
+                        });
+                    } catch (err) {
+                        this.showMessage('复制失败，请手动复制', 'danger');
+                    }
+                },
+                async assign() {
+                    if (!this.miniAppId || !this.csId) {
+                        this.showMessage('请输入小程序 ID 和客服 ID', 'danger');
+                        return;
+                    }
+                    this.loading = true;
+                    try {
+                        const response = await fetch('https://kefu.chacaitx.cn/api/admin/assign', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ MiniAppID: parseInt(this.miniAppId), CustomerServiceID: parseInt(this.csId) })
+                        });
+                        const data = await response.json();
+                        if (response.ok) {
+                            this.showMessage('分配成功！', 'success');
+                            this.miniAppId = '';
+                            this.csId = '';
+                            // 重新加载分配列表，以便更新可用选项
+                            await this.loadAssignments();
+                        } else {
+                            this.showMessage('分配失败: ' + (data.error || '未知错误'), 'danger');
+                        }
+                    } catch (err) {
+                        this.showMessage('网络错误: ' + err.message, 'danger');
+                    } finally {
+                        this.loading = false;
+                    }
+                },
+                async loadMiniApps() {
+                    try {
+                        const response = await fetch('https://kefu.chacaitx.cn/api/admin/miniapps', {
+                            method: 'GET',
+                            headers: { 'Content-Type': 'application/json' }
+                        });
+                        if (response.ok) {
+                            this.miniApps = await response.json();
+                        }
+                    } catch (err) {
+                        console.error('加载小程序列表失败:', err);
+                    }
+                },
+                async loadCustomerServices() {
+                    try {
+                        const response = await fetch('https://kefu.chacaitx.cn/api/admin/cs', {
+                            method: 'GET',
+                            headers: { 'Content-Type': 'application/json' }
+                        });
+                        if (response.ok) {
+                            this.customerServices = await response.json();
+                        }
+                    } catch (err) {
+                        console.error('加载客服列表失败:', err);
+                    }
+                },
+                async loadAssignments() {
+                    try {
+                        const response = await fetch('https://kefu.chacaitx.cn/api/admin/assignments', {
+                            method: 'GET',
+                            headers: { 'Content-Type': 'application/json' }
+                        });
+                        if (response.ok) {
+                            this.assignments = await response.json();
+                        }
+                    } catch (err) {
+                        console.error('加载分配列表失败:', err);
+                    }
+                },
+                async deleteMiniApp(id) {
+                    if (!confirm('确定要删除这个小程序吗？')) return;
+                    try {
+                        const response = await fetch(`https://kefu.chacaitx.cn/api/admin/miniapp/${id}`, {
+                            method: 'DELETE',
+                            headers: { 'Content-Type': 'application/json' }
+                        });
+                        const data = await response.json();
+                        if (response.ok) {
+                            this.showMessage('删除成功！', 'success');
+                            this.loadMiniApps();
+                        } else {
+                            this.showMessage('删除失败: ' + (data.error || '未知错误'), 'danger');
+                        }
+                    } catch (err) {
+                        this.showMessage('网络错误: ' + err.message, 'danger');
+                    }
+                },
+                async setQRCodePath(cs) {
+                    const path = prompt('请输入小程序页面路径（例如：pages/index/index）:', cs.QRCodePath || 'pages/index/index');
+                    if (path === null) return; // 用户取消
+                    
+                    try {
+                        const response = await fetch(`https://kefu.chacaitx.cn/api/admin/cs/${cs.ID}/qrcode`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ QRCodePath: path })
+                        });
+                        const data = await response.json();
+                        if (response.ok) {
+                            this.showMessage('二维码路径设置成功！', 'success');
+                            this.loadCustomerServices();
+                        } else {
+                            this.showMessage('设置失败: ' + (data.error || '未知错误'), 'danger');
+                        }
+                    } catch (err) {
+                        this.showMessage('网络错误: ' + err.message, 'danger');
+                    }
+                },
+                async deleteCS(id) {
+                    if (!confirm('确定要删除这个客服吗？')) return;
+                    try {
+                        const response = await fetch(`https://kefu.chacaitx.cn/api/admin/cs/${id}`, {
+                            method: 'DELETE',
+                            headers: { 'Content-Type': 'application/json' }
+                        });
+                        const data = await response.json();
+                        if (response.ok) {
+                            this.showMessage('删除成功！', 'success');
+                            this.loadCustomerServices();
+                        } else {
+                            this.showMessage('删除失败: ' + (data.error || '未知错误'), 'danger');
+                        }
+                    } catch (err) {
+                        this.showMessage('网络错误: ' + err.message, 'danger');
+                    }
+                },
+                async deleteAssignment(id) {
+                    if (!confirm('确定要删除这个分配关系吗？')) return;
+                    try {
+                        const response = await fetch(`https://kefu.chacaitx.cn/api/admin/assign/${id}`, {
+                            method: 'DELETE',
+                            headers: { 'Content-Type': 'application/json' }
+                        });
+                        const data = await response.json();
+                        if (response.ok) {
+                            this.showMessage('删除成功！', 'success');
+                            // 重新加载分配列表，以便更新可用选项
+                            await this.loadAssignments();
+                        } else {
+                            this.showMessage('删除失败: ' + (data.error || '未知错误'), 'danger');
+                        }
+                    } catch (err) {
+                        this.showMessage('网络错误: ' + err.message, 'danger');
+                    }
+                },
+                async loadGlobalQRCodePath() {
+                    try {
+                        const response = await fetch('https://kefu.chacaitx.cn/api/admin/config/global-qrcode');
+                        if (response.ok) {
+                            const data = await response.json();
+                            this.globalQRCodePath = data.QRCodePath || '';
+                        }
+                    } catch (err) {
+                        console.error('加载全局二维码路径失败:', err);
+                    }
+                },
+                async setGlobalQRCodePath() {
+                    if (!this.globalQRCodePath.trim()) {
+                        this.showMessage('请输入二维码路径', 'danger');
+                        return;
+                    }
+                    this.loading = true;
+                    try {
+                        const response = await fetch('https://kefu.chacaitx.cn/api/admin/config/global-qrcode', {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ QRCodePath: this.globalQRCodePath.trim() })
+                        });
+                        const data = await response.json();
+                        if (response.ok) {
+                            this.showMessage('全局二维码路径设置成功！', 'success');
+                        } else {
+                            this.showMessage('设置失败: ' + (data.error || '未知错误'), 'danger');
+                        }
+                    } catch (err) {
+                        this.showMessage('网络错误: ' + err.message, 'danger');
+                    } finally {
+                        this.loading = false;
+                    }
+                },
+                logout() {
+                    if (confirm('确定要退出登录吗？')) {
+                        // 清除登录状态
+                        localStorage.removeItem('isAdmin');
+                        localStorage.removeItem('adminCsId');
+                        window.location.href = '/';
+                    }
+                }
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>

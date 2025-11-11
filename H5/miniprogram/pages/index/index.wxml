@@ -1,0 +1,14 @@
+<view>
+  <scroll-view scroll-y="true" style="height: 400px;">
+    <block wx:for="{{messages}}" wx:key="id">
+      <view>
+        <text wx:if="{{!item.IsImage}}">{{item.FromUser ? 'You: ' : 'CS: '}} {{item.Content}}</text>
+        <image wx:if="{{item.IsImage}}" src="{{item.ImageURL}}" mode="widthFix" style="max-width: 200px;" />
+      </view>
+    </block>
+  </scroll-view>
+  <button bindtap="authorizeSubscription">Authorize Notifications</button>
+  <input bindinput="bindMessage" value="{{message}}" />
+  <button bindtap="sendMessage">Send Text</button>
+  <button bindtap="sendImage">Send Image</button>
+</view>
